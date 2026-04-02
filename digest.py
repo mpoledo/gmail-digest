@@ -33,13 +33,14 @@ def get_gmail_service():
 
 
 def fetch_today_emails(service):
-    """Obtiene los correos de hoy usando solo headers y snippets."""
+    """Obtiene los correos de las últimas 24 horas usando solo headers y snippets."""
     now = datetime.now(BUENOS_AIRES)
-    date_str = now.strftime("%Y/%m/%d")
+    since = now - timedelta(hours=24)
+    since_unix = int(since.timestamp())
 
     result = service.users().messages().list(
         userId="me",
-        q=f"after:{date_str}",
+        q=f"after:{since_unix}",
         maxResults=80,
     ).execute()
 
