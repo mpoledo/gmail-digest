@@ -72,18 +72,18 @@ economista consultor independiente en Buenos Aires (CABA).
 
 Tu tarea es clasificar cada correo en una de estas cuatro categorías:
 
-🔴 IMPORTANTE: correos personales o de trabajo con remitentes reales dirigidos a Mariano directamente,
-confirmaciones de transacciones financieras (Mercado Pago, Balanz, bancos), correos del BID o
-relacionados a licitaciones/oportunidades profesionales, eventos o convocatorias relevantes para
+🔴 IMPORTANTE: correos personales o de trabajo con remitentes reales dirigidos a Mariano directamente, 
+correos del BID o relacionados a licitaciones/oportunidades profesionales, eventos o convocatorias relevantes para
 un economista consultor. También siniestros, consorcios, o asuntos urgentes personales.
 
-🟡 INTERESANTE: información útil pero no urgente. Noticias económicas relevantes,
-novedades de mercado de La Nación, operatoria de mercados de brokers locales.
+🟡 INTERESANTE: informacion util pero no urgente. Confirmaciones de transacciones
+financieras (Mercado Pago, Balanz, bancos, transferencias). Noticias economicas,
+novedades de mercado de La Nacion, operatoria de brokers locales.
 
 📦 AGRUPADO: newsletters conocidos que se muestran solo como grupo sin detalle:
 Martín Orta / Allaria Research, Google alertas de seguridad, Rava Bursátil, Bull Market Brokers,
 Balanz Daily, Balfour Capital, Nexo, Compounding Quality, Zacks, NYT (The Morning / The World /
-breaking news / Wirecutter), LinkedIn alertas de empleo.
+breaking news / Wirecutter), LinkedIn alertas de empleo, GitHub, Mercor Trust & Safety, Apple.
 
 🗑️ DESCARTABLE: promociones comerciales (Toyota, Fravega, Uber, tiendas, PedidosYa, Cinemark,
 Club La Nación, Equus, Banco Nación promos), newsletters sin relevancia profesional
