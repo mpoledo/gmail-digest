@@ -60,6 +60,7 @@ def fetch_today_emails(service):
             "from": headers.get("From", ""),
             "subject": headers.get("Subject", ""),
             "snippet": detail.get("snippet", "")[:200],
+            "unread": "UNREAD" in detail.get("labelIds", []),
         })
 
     return emails
@@ -72,13 +73,13 @@ economista consultor independiente en Buenos Aires (CABA).
 
 Tu tarea es clasificar cada correo en una de estas cuatro categorías:
 
-🔴 IMPORTANTE: correos personales o de trabajo con remitentes reales dirigidos a Mariano directamente, 
-correos del BID o relacionados a licitaciones/oportunidades profesionales, eventos o convocatorias relevantes para
-un economista consultor. También siniestros, consorcios, o asuntos urgentes personales.
+🔴 IMPORTANTE: correos personales o de trabajo con remitentes reales dirigidos a Mariano directamente,
+correos del BID o relacionados a licitaciones/oportunidades profesionales, eventos o convocatorias
+relevantes para un economista consultor. También siniestros, consorcios, o asuntos urgentes personales.
 
-🟡 INTERESANTE: informacion util pero no urgente. Confirmaciones de transacciones
-financieras (Mercado Pago, Balanz, bancos, transferencias). Noticias economicas,
-novedades de mercado de La Nacion, operatoria de brokers locales.
+🟡 INTERESANTE: información útil pero no urgente. Confirmaciones de transacciones financieras
+(Mercado Pago, Balanz, bancos, transferencias). Noticias económicas relevantes,
+novedades de mercado de La Nación, operatoria de mercados de brokers locales.
 
 📦 AGRUPADO: newsletters conocidos que se muestran solo como grupo sin detalle:
 Martín Orta / Allaria Research, Google alertas de seguridad, Rava Bursátil, Bull Market Brokers,
@@ -126,7 +127,15 @@ def classify_emails(emails):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
-    return json.loads(raw.strip())
+    classified = json.loads(raw.strip())
+
+    # cruzar el campo unread desde los emails originales
+    unread_map = {e["subject"]: e["unread"] for e in emails}
+    for categoria in ["importante", "interesante"]:
+        for item in classified.get(categoria, []):
+            item["unread"] = unread_map.get(item["subject"], False)
+
+    return classified
 
 
 # ─── Formateo del mensaje ──────────────────────────────────────────────────────
@@ -139,7 +148,8 @@ def format_message(classified, date_str):
     if classified.get("importante"):
         for item in classified["importante"]:
             sender = item["from"].split("<")[0].strip()
-            lines.append(f"• *{sender}* — {item['subject']}")
+            unread_mark = " 🔔" if item.get("unread") else ""
+            lines.append(f"• *{sender}* — {item['subject']}{unread_mark}")
             lines.append(f"  _{item['summary']}_")
     else:
         lines.append("_Ninguno_")
@@ -151,7 +161,8 @@ def format_message(classified, date_str):
     if classified.get("interesante"):
         for item in classified["interesante"]:
             sender = item["from"].split("<")[0].strip()
-            lines.append(f"• *{sender}* — {item['subject']}")
+            unread_mark = " 🔔" if item.get("unread") else ""
+            lines.append(f"• *{sender}* — {item['subject']}{unread_mark}")
             lines.append(f"  _{item['summary']}_")
     else:
         lines.append("_Ninguno_")
