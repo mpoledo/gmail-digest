@@ -280,6 +280,7 @@ def send_telegram(text):
  
 def main():
     now = datetime.now(BUENOS_AIRES)
+    print(f"  → Version con pre-filtro activa")
     date_str = now.strftime("%d/%m/%Y")
  
     print(f"[{date_str}] Obteniendo correos...")
