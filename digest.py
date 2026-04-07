@@ -66,6 +66,76 @@ def fetch_today_emails(service):
     return emails
 
 
+# ─── Pre-filtro por remitente ─────────────────────────────────────────────────
+
+# Remitentes que van directo a agrupado sin pasar por Haiku
+AGRUPADO_KEYWORDS = [
+    "allaria", "orta", "rava bursatil", "bull market", "balanz",
+    "balfour", "nexo", "compounding", "zacks", "nytimes", "nytdirect",
+    "linkedin", "github", "mercor", "apple", "google",
+]
+
+# Remitentes que van directo a descartable sin pasar por Haiku
+DESCARTABLE_KEYWORDS = [
+    "toyota", "fravega", "uber", "pedidosya", "cinemark", "lanacion",
+    "equus", "mailing.bna", "coursera", "misionerosdigitales",
+    "clubln", "wirecutter", "promociones@", "newsletter@", "noreply@",
+]
+
+def pre_filter(emails):
+    """Clasifica en Python los correos obvios, devuelve solo los ambiguos a Haiku."""
+    to_haiku = []
+    agrupado = {}
+    descartable = 0
+
+    for email in emails:
+        from_lower = email["from"].lower()
+        subject_lower = email["subject"].lower()
+
+        matched_agrupado = any(k in from_lower for k in AGRUPADO_KEYWORDS)
+        matched_descartable = any(k in from_lower for k in DESCARTABLE_KEYWORDS)
+
+        if matched_agrupado:
+            # determinar nombre del grupo
+            if "nytimes" in from_lower or "nytdirect" in from_lower:
+                grupo = "NYT"
+            elif "linkedin" in from_lower:
+                grupo = "LinkedIn"
+            elif "zacks" in from_lower:
+                grupo = "Zacks"
+            elif "balfour" in from_lower:
+                grupo = "Balfour Capital"
+            elif "compounding" in from_lower:
+                grupo = "Compounding Quality"
+            elif "github" in from_lower:
+                grupo = "GitHub"
+            elif "mercor" in from_lower:
+                grupo = "Mercor"
+            elif "apple" in from_lower:
+                grupo = "Apple"
+            elif "google" in from_lower:
+                grupo = "Google"
+            elif "allaria" in from_lower or "orta" in from_lower:
+                grupo = "Allaria Research"
+            elif "bull market" in from_lower:
+                grupo = "Bull Market Brokers"
+            elif "balanz" in from_lower:
+                grupo = "Balanz"
+            elif "nexo" in from_lower:
+                grupo = "Nexo"
+            elif "rava" in from_lower:
+                grupo = "Rava Bursátil"
+            else:
+                grupo = email["from"].split("<")[0].strip()[:30]
+            agrupado[grupo] = agrupado.get(grupo, 0) + 1
+        elif matched_descartable:
+            descartable += 1
+        else:
+            to_haiku.append(email)
+
+    return to_haiku, agrupado, descartable
+
+
 # ─── Claude Haiku ─────────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = """Sos un asistente que clasifica correos para Mariano Poledo,
@@ -103,8 +173,8 @@ Para "descartable", solo el número total.
 No incluyas explicaciones fuera del JSON."""
 
 
-def classify_emails(emails):
-    """Llama a Claude Haiku con los headers+snippets para clasificar."""
+def classify_emails(emails, agrupado_prefiltro, descartable_prefiltro):
+    """Llama a Claude Haiku solo con los correos ambiguos."""
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     emails_text = "\n\n".join([
@@ -122,7 +192,6 @@ def classify_emails(emails):
     )
 
     raw = message.content[0].text.strip()
-    # limpiar posibles backticks si el modelo los agrega
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
@@ -134,6 +203,11 @@ def classify_emails(emails):
     for categoria in ["importante", "interesante"]:
         for item in classified.get(categoria, []):
             item["unread"] = unread_map.get(item["subject"], False)
+
+    # mergear agrupado y descartable del pre-filtro
+    for grupo, count in agrupado_prefiltro.items():
+        classified["agrupado"][grupo] = classified["agrupado"].get(grupo, 0) + count
+    classified["descartable"] = classified.get("descartable", 0) + descartable_prefiltro
 
     return classified
 
@@ -218,7 +292,9 @@ def main():
         return
 
     print("  → Clasificando con Claude Haiku...")
-    classified = classify_emails(emails)
+    to_haiku, agrupado_pre, descartable_pre = pre_filter(emails)
+    print(f"  → Pre-filtro: {len(to_haiku)} correos ambiguos a Haiku, {sum(agrupado_pre.values())} agrupados, {descartable_pre} descartables")
+    classified = classify_emails(to_haiku, agrupado_pre, descartable_pre)
 
     message = format_message(classified, date_str)
     print("  → Enviando por Telegram...")
